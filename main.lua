@@ -1,45 +1,71 @@
 -- Color-Grid
 
---Right now you're trying to make the 2D array / matrix that holds the
---"data" for whether or not the grid is shown on certain coordinates on
---the LOVE2D window that will be shown. I'm thinking I should only worry
---about using 1's and 0's. This way all the matrix is doing is telling
---whatever other function is using to "turn off" or "turn on" the grid
---color on that coordinate. From here, the way I'm imagining that I'll
---have the color expand is by having some function check the matrix to
---see whether the adjacent cells contain zeroes or ones. If a 1 is found
---then the function can signal that and color can expand there.
+--[[
+Finish matrix initialization, color generation, and I'm testing out an array of points.
+Currently the program won't run because of some weird missing ')' or unexpected symbol
+on line 14. I'll figure it out later, but the big issue is that I'm unsure if it's some
+weird subtle bug or if it's an issue with my syntax.
+--]]
 
---ISSUE: As it stands, I'm unsure of whether the window's coordinates
---are integers or doubles. In the inner most loop below, whether or not
---path[i][j] is marked as a 1 depends on whether i OR j is divisible by
---12 (or whatever number I choose to divide the grid into). If getDimensions()
---returned doubles, then I'll have to use a floor() function, otherwise 
---I can just check for i/j being multiples of 12.
-
+--[[
 function love.conf(t)
 	t.console = true
 end
+--]]
 
 function love.load()
-	width, height = love.graphics.getDimensions()
-	columns = width/12
-	rows = height/12
-	grid = {
-		path = {}
-		for i = 1, width do
-			path[i] = {}
-			for j = 1, height do
-				 
+	love.window.setMode(800, 600)
+	width = 800
+	height = 600			--Dimensions of LOVE2D window.
+	grid = {				--Grid object.
+		local path = {},			--Grid matrix.
+		local pCoord = {},		--Pixels that will outline the grid.
+		local colInterval = 0, 
+		local rowInterval = 0,	--Grid interval.
+		local function grid:mInit(w, h)
+			self.colInterval, self.rowInterval = self.interval(w, h)	--Grid interval.
+			local k = 1				--Counter for pCoord inside the double loop below.
+			for i = 1, w do	--This double loop initializes the matrix(path) that will be the grid.
+				self.path[i] = {}		
+				for j = 1, h do
+					--This conditional checks to see if we've landed on a pixel that will
+					--be a grid line.
+					if (j%self.rowInterval) == 0 or (i%self.colInterval) == 0 then
+						self.path[i][j] = 1
+						self.pCoord[k] = {i, j}
+						k = k + 1
+					else
+						self.path[i][j] = 0	--Not a grid line.
+					end
+				end
 			end
+		end,	
+		local function grid:interval(w, h)	--Calculates grid line intervals.
+			return math.floor(w/12), math.floor(h/12)
+		end,
+		local function grid:colorGen()				--Generates a random color.
+			local color = {0, 0, 0}
+			color[1] = math.random(0, 255)
+			color[2] = math.random(0, 255)
+			color[3] = math.random(0, 255)
+			return color
+		end,
+		local function grid:draw()					--Grid object's drawing function.
+			love.graphics.setColor(82, 82, 122)
+			love.graphics.points(pCoord)
 		end
 	}
+	grid.__index = grid
+	graph = setmetatable({}, grid)
+	graph:mInit(width, height)
 end
 
 function love.update(dt)
 end
 
 function love.draw()
+	love.graphics.setBackgroundColor(230, 255, 255)
+	graph:draw()
 end
 
 function love.mousepressed(x, y, button, istouch)
