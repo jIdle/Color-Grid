@@ -34,8 +34,8 @@ end
 function love.load()
 	love.window.setMode(800, 600)
 	love.graphics.setPointSize(3)
-	width = 800
-	height = 600	
+	local width = 800
+	local height = 600	
 	dTime = 0
 	grid = {					-- Grid object.
 		path = {},				-- Grid matrix.
@@ -53,11 +53,7 @@ function love.load()
 			for j = 1, h do
 				-- This conditional checks to see if we've landed on a pixel that will
 				-- be a grid line.
-				if (j%self.rowInterval) == 0 then
-					self.path[i][j] = 1
-					self.pCoord[k] = {i, j, 1, 1, 1}
-					k = k + 1
-				elseif (i%self.colInterval) == 0 then
+				if (j%self.rowInterval) == 0 or (i%self.colInterval) == 0 then
 					self.path[i][j] = 1
 					self.pCoord[k] = {i, j, 1, 1, 1}
 					k = k + 1
@@ -84,10 +80,14 @@ function love.load()
 end
 
 function love.update(dt)
-	for i = 1, #graph.pCoord do
-		graph.pCoord[i][3] = love.math.random(0, 1)	-- this tests points color changes individually, rather than colorGen's method.
-		graph.pCoord[i][4] = love.math.random(0, 1)
-		graph.pCoord[i][5] = love.math.random(0, 1)
+	dTime = dTime + dt
+	if dTime > .3 then
+		for i = 1, #graph.pCoord do
+			graph.pCoord[i][3] = love.math.random(0, 1)	-- This tests points color changes individually, rather than colorGen's method.
+			graph.pCoord[i][4] = love.math.random(0, 1)	-- I might try throwing this into a function if it makes things less cluttered.
+			graph.pCoord[i][5] = love.math.random(0, 1)
+		end
+		dTime = 0
 	end
 end
 
