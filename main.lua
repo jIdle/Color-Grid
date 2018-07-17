@@ -1,28 +1,17 @@
 -- Color-Grid
 
 --[[
-Finally got the grid to display on the window, which means all the math and syntax work perfectly.
 There are three things that I want to move onto now:
 	1. Fixing grid-line interval to change depending on window dimensions.
 	2. Allowing the grid-line colors and intensity to change dynamically. (Random/Trig)
 	3. Considering whether path object is necessary or not.
 		3a. Path object will likely be necessary as it will act as a map for color changes
 			along the grid lines. (e.g. follow the 1's in order down each grid line).
-	
-UPDATE: 	
-	1. Changing the points in pCoord all at once by using love.graphics.setColor was a bad choice.
-		love.graphics.setColor modifies the color of the points by some multiplier rather than a
-		flat adjustment. I failed to realize that the "point" object that love defines also has a
-		color parameter in the form of: 
 			
-			point = {x, y, r, g, b, a}
-		
-		This means that instead of changing the color of every point at once, I can change each
-		point individually / as needed. 
-	2. I also discovered that the size of the points can be changed through the use of
-		love.graphics.setPointSize(). Which means I can remove the code that triples the number of
-		points in pCoord and instead, simply raise the point size.
-	3. Lastly, I removed colorGen() because it was changing color of points in an inneficient way.
+	Guy on discord let me know that love.graphics.setPointSize() only applies to points drawn after
+	its use. This means that I can call love.graphics.setPointSize() before the individual points that
+	I want to alter, render/draw them, then call love.graphics.setPointSize() again and render/draw the
+	rest of them. This way it will look like the points are different sizes.
 --]]
 
 --[[
@@ -74,23 +63,69 @@ function love.load()
 		love.graphics.points(self.pCoord)
 	end
 	
+	function shapeDraw(x, y)
+		love.graphics.setColor(255, 255, 255)
+		love.graphics.ellipse("fill", x, y, 5, 5, 50)
+	end
+	
+	--Calculates the closet gridline, mainly based off of the column and row intervals.
+	function grid:closest(x, y)
+		xPivot = self.colInterval/2
+		yPivot = self.rowInterval/2
+		xMod = x%self.colInterval
+		yMod = y%self.rowInterval
+		xDiff = math.abs(xMod - xPivot)
+		yDiff = math.abs(yMod - yPivot)
+		nearToGridline = math.max(xDiff, yDiff)
+		
+		if nearToGridline == xDiff then
+			if xMod <= xPivot then
+				return multipleRound(x, self.colInterval, "down"), y
+			else
+				return multipleRound(x, self.colInterval, "up"), y
+			end
+		else
+			if yMod <= yPivot then
+				return x, multipleRound(y, self.rowInterval, "down")
+			else
+				return x, multipleRound(y, self.rowInterval, "up")
+			end
+		end
+	end
+	
+	--Rounds the specified number to the nearest multiple of a specified number.
+	function multipleRound(toRound, multiple, direction)
+		if direction == "down" then
+			return toRound - (toRound%multiple)
+		end
+		if direction == "up" then
+			return toRound + (multiple - (toRound%multiple))
+		end
+	end
+	
 	grid.__index = grid
 	graph = setmetatable({}, grid)
 	graph:mInit(width, height)
 end
 
 function love.update(dt)
-	dTime = dTime + dt
-	if dTime > .3 then
+	--dTime = dTime + dt
+	--if dTime > .1 then
 		for i = 1, #graph.pCoord do
-			graph.pCoord[i][3] = love.math.random(0, 1)	-- This tests points color changes individually, rather than colorGen's method.
-			graph.pCoord[i][4] = love.math.random(0, 1)	-- I might try throwing this into a function if it makes things less cluttered.
+			graph.pCoord[i][3] = love.math.random(0, 1)	
+			graph.pCoord[i][4] = love.math.random(0, 1)	
 			graph.pCoord[i][5] = love.math.random(0, 1)
 		end
-		dTime = 0
-	end
+		--dTime = 0
+	--end
 end
 
 function love.draw()
 	graph:draw()
+	if love.mouse.isDown(1) then
+		x, y = love.mouse.getPosition()
+		startX, startY = graph:closest(x, y)
+		shapeDraw(startX, startY)
+	end
+	
 end
